@@ -1,0 +1,11 @@
+altair
+pandas
+streamlit
+polars
+pyarrow
+plotly
+pydeck
+seaborn
+matplotlib
+folium
+streamlit_folium
