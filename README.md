@@ -1,28 +1,6 @@
-# Link to GitHub Repository for Seth Linares
-[Github Repository](https://github.com/sethlinares/app_challenge_membership_fa23)
+# LDS Church Membership Analysis
 
-
-
-
-# Challenge General Information
-
-You can read the details of the challenge at [challenge.md](challenge.md)
-
-## Key Items
-
-- __Due Date:__ December 13, 2023
-- __Work Rules:__ You cannot work with others.  You can ask any question you want in our general channel. Teacher and TA are the only one that can answer questions. If you leverage code from an internet connection, then it should be referenced.
-- __Product:__ A streamlit app that runs within Docker and builds from your repo. Additionally, a fully documented `readme.md`.
-- __Github Process:__ Each student will fork the challenge repository and create their app. They will submit a link to the app in Canvas.
-- __Canvas Process:__ Each student will upload a `.pdf` or `.html` file with your results as described in [challenge.md](challenge.md)
-
-
-## Notes & References
-
-- [Fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo)
-- [Creating a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)
-
-### Docker Information
+## Getting Started
 
 Within this repository, you can simply run `docker compose up` to leverage the `docker-compose.yaml` with your local folder synced with the container folder where the streamlit app is running. 
 
@@ -30,58 +8,6 @@ Additionally, you can use `docker build -t streamlit .` to use the `Dockerfile` 
 
 We currently use `python:3.11.6-slim` in our [Dockerfile](Dockerfile).  You can change to `FROM quay.io/jupyter/minimal-notebook` to use the [minimal Jupyter notebook](https://quay.io/organization/jupyter)
 
-
-
-# Target Scripts for review
-
-## Cmd 5: Filter and process pattern data
-Cmd 5 in the given Pyspark code is involved in filtering and processing various datasets, primarily focusing on geographic and time-based data. The process begins with a subset of the "tract_table" dataset after filtering for LDS buildings and then further filtered to exclusively regions labeled as "ID". The spatial data processing segment involves joining and filtering operations based on "placekey", while making sure to use a left_semi join to retain only the rows from spatial dataframe that have a match in the poi dataframe. The same technique is also used for spatial_idaho dataframe, where the left_semi join is used between spatial and poi_idaho dataframes on the placekey field, retaining only the rows from spatial dataframe that have a match in the poi_idaho dataframe. The pattern dataset is processed similarly, with additional steps to extract year and month information from a "date_range_start" column, filter for the year 2019, and inner join with the POI dataset. The command concludes by creating a new database and saving these processed datasets as tables ready to be used for analysis.
-
-### Suggestions
-The code could be improved by dealing with some of the redundant code. For example, the same filtering operation is performed on the pattern and pattern_idaho datasets as well as the spatial datasets. This could be simplified by just creating the more general spatial and pattern datasets and then filtering them later on in the code rather than going through and processing the specific ID dataset all over again. Overall the code isn"t awful but it could be improved to make it more efficient and easier to understand.
-
-## Cmd 22: Traffic Filter to Chapel Algorithm
-Cmd 22 deals with a complex analysis of patterns related to chapel visits, using data from a table named "chapel.pattern_idaho". The code begins by defining a window partition which descends by value and is grouped by "placekey" and "date_range_start". This is then used to rank the popular days for the chapels. There are 2 percentiles that the coder tried to make, 50th and 70th. We use this to try and identify chapels based on their popularity on Sundays and Mondays. The logic here is to select places that are most popular on Sundays (ranked in the top 3) and least popular on Mondays (ranked in the bottom 4). This part concludes by joining this processed data with the poi table to add location details like street address and city, and then saving the result as a new table.
-
-### Suggestions
-One of the biggest issues that I noticed when first going over the code is the improper assignment and creation of percentiles. The same percentile value was used both for the 50th and 70th, making them both effectively look at the 70th percentile. Based on the use of these percentiles that would completely skew the results if not addressed. I feel like it is also important to note that despite some professor's beleifs that trying to squish as many operations into a single block as is possible, it does really suffer in terms of following the logic of the process. Another problem I noticed was that sometimes methods were chained when unnecessary such as 2 filters in a row when one would be sufficient. 
-
-
-## Cmd 50: US Spread Active Members to tracts
-Cmd 50 in the PySpark code is involved in combining and refining data from two different tables (chapel.chapel_nearest and chapel.use_pattern_chapel) to identify relevant locations for an analysis focused on chapel visits. The process begins by loading these tables into the nearest and pattern dataFrames respectively. The main thing being done here is a full join of these two dataFrames on the "placekey" field. This join renames certain columns in the nearest dataFrame for clarity ("street_address" to "nearest_address" and "initial_address" to "scrape_address"), and by selecting specific fields for the join operation. The filtering applied after the join are pretty specifi. It focuses on entries where "Sunday" = 1, or "Sunday" = 2 and "dist" is not null or where "dist" is less than or equal to 0.0003 and "city" is null. The data is then sorted by "placekey" and descending "dist", with duplicates dropped based on "placekey".
-
-### Suggestions
-
-I think the only improvements and/or fixes I would add would be possibly splitting up the cell. I think defining the tables within the same cell as your main join and filtering doesn"t feel right to me at least. I believe that it would make it both more readable and easier to deal with errors if/when they pop up in your code logic. I suppose the only other thing I think is a bit odd is the use of the full join. It could cause issues with null values in the resulting dataframe so I would be careful with that. I think that the code is pretty good overall though.
-
-## Cmd 60: Sunday Visitor Estimates
-Cmd 60 focuses on estimating visitor counts to chapels on Sundays. It involves joining and processing data from multiple tables: "chapel.placekey_chapel", "chapel.pattern", and "safegraph.censustract_pkmap". The process starts by joining the patterns DataFrame with pk_final on "placekey". This join filters the dataset to focus only on chapels. An important part of this process is the extraction and analysis of visit data by day by using selectExpr along with posexplode_outer. The code then joins this data with pk_tract to add "tractcode" information and calculates the exact date of the visit using date_add. The subsequent filtering to keep only records where "dayofweek" equals 1 (Sunday) shows the focus on Sunday visitors. The aggregation functions then calculate various statistics like count, sum, median, minimum, and maximum of the visit counts. An additional column "sunday_visits" is computed to estimate normalized visit counts. The final aggregation step consolidates these estimates at the "placekey" level, and the results are saved as a new table and displayed.
-
-### Suggestions
-
-I think a potential problem that stand out to me is with the left join, you open yourself up to the risk of nulls being present within the data. If you do this, you need to be prepared to deal with the nulls in some way. I think that the code is written decently so I don"t notice any glaring issues.
-
-
-## Cmd 64
-In Cmd 64, a new SQL table named membership.home_dist is created. This table is formed by selecting specific columns from the dat_distance_all table. The columns selected include "placekey", "home", "region", "value", "raw_visitor_counts", and "date_range_start". Notably, a new column point_placekey is created using the ST_Point function to generate geographical points from "longitude" and "latitude" values. Another column, "dist", is calculated using the ST_DISTANCE function to compute the distance between each "point_placekey" and a "center_home" point, with the distance being multiplied by 69.
-
-### Suggestions
-In this part of the code SQL was used which is something I haven"t used in a decent while. When trying to look for issues, I think the main thing that raises my eyebrows is the use of the ST_DISTANCE function and using 69 as a conversion factor like this. I get that the developer is trying to get the distance and that the distance between any two adjacent latitudes is approximately 69 miles, but I believe that this could be done perhaps by using a function that is more specific to the task at hand. I think that the code is pretty good overall though and my suggestion might not even be necessary.
-
-## Cmd 66
-Cmd 66 combines data from home_weight and sunday tables to estimate active chapel members per tract. The process begins by selecting specific columns from home_weight and joining it with the sunday table. The key operation here is the creation of two new columns, typical_sunday and active_members. The typical_sunday column is calculated using a conditional statement: if the "median" is less than or equal to 16, it uses the "max" value. Otherwise it uses the "median". The active_members column is calculated by multiplying this "median" by "home_weight". The resulting data is then grouped by "home" and aggregated to estimate the total number of active members, which is rounded to the nearest whole number.
-
-### Suggestions
-The code looks clean. I"ve harped on this numerous times but I think that the use of the left join could cause some issues and definitely needs to be considered closely. I don"t think that there are any other issues that I can see with the code.
-
-## Cmd 74
-Cmd 74 is trying to create a comparison at the county level, using data on active chapel members, census data, and population figures. The process involves joining the county_target DataFrame with a modified version of the rel_cens DataFrame, where the column "Church of Jesus Christ of Latter-day Saints" is renamed to "rcensus_lds". This joined data is further enhanced by calculating two ratios: ratio_census and ratio_population. These ratios are computed by dividing the estimated active members by the LDS census data and the total population, respectively. The aim is likely to assess the proportion of active chapel members in relation to the broader population and specific religious demographics. The final DataFrame is then saved as a new table and displayed.
-
-### Suggestions
-I don"t really see any issues. Maybe it's because I"m tired, but at this point the last few have seemed pretty clean to me. The left join is still something I would mention if being pedantic, but I think that the code is pretty good.
-
-
-# Vocabulary
 
 ## 1. The Added Value of DataBricks in Data Science Process
 
